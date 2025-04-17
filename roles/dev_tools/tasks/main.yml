@@ -1,15 +1,45 @@
 ---
 - name: Update package cache
+  become: true
   ansible.builtin.apt:
-    update_cache: true
-  changed_when: false
+    update_cache: yes
   when: ansible_os_family == "Debian"
+  changed_when: false
 
 - name: Install developer tools
+  become: true
   ansible.builtin.package:
-    name: "{{ dev_tools_packages }}"
+    name:
+      - wget
+      - curl
+      - htop
+      - git
+      - vim
+      - neovim
+      - emacs
+      - tmux
+      - zip
+      - unzip
+      - jq
+      - tree
     state: present
-  
+
+- name: Set Neovim as default EDITOR for user
+  become: false
+  ansible.builtin.lineinfile:
+    path: "/home/{{ ansible_user }}/{{ item }}"
+    regexp: "^export EDITOR="
+    line: "export EDITOR=nvim"
+    state: present
+    create: true
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  loop:
+    - .bashrc
+    - .zshrc
+  ignore_errors: true
+
 - name: Check installed versions
   ansible.builtin.shell: |
     echo "Installed Tools:"
