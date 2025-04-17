@@ -1,0 +1,19 @@
+# Ansible retry files
+*.retry
+
+# Vim swap files
+*.swp
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local environment files
+.env
+.venv
+env/
+venv/
+
+# macOS specific files
+.DS_Store 

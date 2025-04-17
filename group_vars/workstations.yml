@@ -1,0 +1,9 @@
+---
+# Variables shared by all workstations
+
+# Example variables:
+# user_name: altilar
+# packages_common:
+#   - git
+#   - vim
+#   - curl 

@@ -1,0 +1,11 @@
+---
+- name: Setup Altilar Linux Workstation
+  hosts: workstations
+  become: true
+  
+  roles: []
+  
+  tasks:
+    - name: Ensure system is up to date
+      ansible.builtin.debug:
+        msg: "This is a placeholder task. Add actual tasks here." 

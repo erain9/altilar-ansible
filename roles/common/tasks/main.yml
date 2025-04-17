@@ -1,0 +1,7 @@
+---
+# Common tasks applied to all workstations
+
+- name: Update package cache
+  ansible.builtin.package:
+    update_cache: true
+  changed_when: false 

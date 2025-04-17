@@ -1,0 +1,4 @@
+---
+# Default variables for the common role
+
+common_packages: [] 

@@ -1,0 +1,5 @@
+[workstations]
+# Add workstation hosts here
+
+[workstations:vars]
+ansible_connection=ssh 
