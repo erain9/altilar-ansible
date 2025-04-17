@@ -1,0 +1,6 @@
+---
+# Handler to restart Redis service
+- name: Restart redis
+  ansible.builtin.systemd:
+    name: redis-server
+    state: restarted 

@@ -1,0 +1,187 @@
+---
+# Tasks for Kafka role
+
+- name: Install Java dependency
+  become: true
+  ansible.builtin.package:
+    name: "{{ kafka_java_package }}"
+    state: present
+
+- name: Detect JAVA_HOME
+  become: true
+  ansible.builtin.shell: # Use shell module for pipes
+    # Find the real path of the java executable and get the directory (potential JAVA_HOME)
+    cmd: readlink -f /usr/bin/java | sed "s:/bin/java::"
+  register: java_home_result
+  changed_when: false
+  check_mode: false # This command should always run
+
+- name: Set JAVA_HOME fact
+  ansible.builtin.set_fact:
+    detected_java_home: "{{ java_home_result.stdout }}"
+  when: java_home_result.rc == 0 and java_home_result.stdout != ""
+
+# -- Zookeeper Setup --
+- name: Install Zookeeper package
+  become: true
+  ansible.builtin.package:
+    name: zookeeperd # Debian/Ubuntu package providing zookeeper service
+    state: present
+
+- name: Ensure Zookeeper data directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ zookeeper_data_dir }}"
+    state: directory
+    owner: zookeeper
+    group: zookeeper
+    mode: '0755'
+
+# Note: Default zookeeperd package config is usually okay for single node.
+# Add config templating here if specific zoo.cfg changes are needed.
+
+- name: Ensure Zookeeper service is enabled and running
+  become: true
+  ansible.builtin.systemd:
+    name: zookeeper
+    state: started
+    enabled: true
+
+# -- Kafka Setup --
+
+- name: Clean up previous Kafka installation attempts
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ kafka_install_dir }}"
+    - "{{ kafka_download_dest }}"
+    - "/tmp/{{ kafka_extracted_dir_name }}"
+
+- name: Create Kafka group
+  become: true
+  ansible.builtin.group:
+    name: "{{ kafka_group }}"
+    state: present
+
+- name: Create Kafka user
+  become: true
+  ansible.builtin.user:
+    name: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    home: "{{ kafka_install_dir }}"
+    shell: /bin/false
+    system: true
+    state: present
+
+- name: Ensure Kafka install parent directory exists (/opt)
+  become: true
+  ansible.builtin.file:
+    path: "{{ kafka_install_dir | dirname }}" # Gets /opt from /opt/kafka
+    state: directory
+    mode: '0755'
+
+- name: Download Kafka archive
+  become: true # To download to /tmp
+  ansible.builtin.get_url:
+    url: "{{ kafka_archive_url }}"
+    dest: "{{ kafka_download_dest }}"
+    mode: '0644'
+  register: kafka_download
+
+- name: Unarchive Kafka to temporary location
+  become: true # To unarchive in /tmp
+  ansible.builtin.unarchive:
+    src: "{{ kafka_download_dest }}"
+    dest: "/tmp" # Extract to temp
+    remote_src: true
+    creates: "/tmp/{{ kafka_extracted_dir_name }}/bin/kafka-server-start.sh"
+  when: kafka_download.changed # Only unarchive if downloaded
+
+# Check if the final install dir exists before attempting copy
+- name: Check if final Kafka directory exists
+  ansible.builtin.stat:
+    path: "{{ kafka_install_dir }}"
+  register: kafka_install_dir_stat
+  become: true # Stat needs to check /opt
+
+- name: Copy Kafka installation to final location
+  become: true
+  ansible.builtin.copy:
+    src: "/tmp/{{ kafka_extracted_dir_name }}/"
+    dest: "{{ kafka_install_dir }}"
+    remote_src: true
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: preserve # Preserve modes from extracted archive
+  register: kafka_copy_result
+  when: kafka_download.changed or not kafka_install_dir_stat.stat.exists | default(false)
+
+- name: Set ownership of Kafka installation directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ kafka_install_dir }}"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    recurse: true
+    state: directory
+
+- name: Ensure Kafka log directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ kafka_log_dirs }}"
+    state: directory
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: '0755'
+
+- name: Configure Kafka server.properties
+  become: true
+  ansible.builtin.template:
+    src: server.properties.j2
+    dest: "{{ kafka_config_dir }}/server.properties"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: '0644'
+  notify:
+    - Restart kafka
+
+- name: Create Kafka systemd service file
+  become: true
+  ansible.builtin.template:
+    src: kafka.service.j2
+    dest: /etc/systemd/system/kafka.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Restart kafka
+
+- name: Ensure Kafka service is enabled and running
+  become: true
+  ansible.builtin.systemd:
+    name: kafka
+    state: started
+    enabled: true
+    daemon_reload: true # Ensure systemd reads the new unit file
+
+- name: Verify Zookeeper service is active
+  become: false
+  ansible.builtin.command:
+    cmd: systemctl is-active zookeeper
+  register: zookeeper_status
+  changed_when: false
+  failed_when: "'active' not in zookeeper_status.stdout"
+  retries: 3
+  delay: 5
+
+- name: Verify Kafka service is active
+  become: false
+  ansible.builtin.command:
+    cmd: systemctl is-active kafka
+  register: kafka_status
+  changed_when: false
+  failed_when: "'active' not in kafka_status.stdout"
+  retries: 3 # Kafka might take a bit longer to start after Zookeeper
+  delay: 10 

@@ -1,0 +1,36 @@
+# Kafka server.properties template
+# Managed by Ansible - {{ ansible_managed }}
+
+# Broker ID
+broker.id={{ kafka_broker_id }}
+
+# Socket Server Settings
+listeners={{ kafka_listeners }}
+advertised.listeners={{ kafka_advertised_listeners }}
+num.network.threads=3
+num.io.threads=8
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+
+# Log Basics
+log.dirs={{ kafka_log_dirs }}
+num.partitions={{ kafka_num_partitions }}
+num.recovery.threads.per.data.dir=1
+
+# Internal Topic Settings
+offsets.topic.replication.factor={{ kafka_replication_factor }}
+transaction.state.log.replication.factor={{ kafka_replication_factor }}
+transaction.state.log.min.isr={{ kafka_replication_factor }}
+
+# Log Retention Policies
+log.retention.hours=168
+log.segment.bytes=1073741824
+log.retention.check.interval.ms=300000
+
+# Zookeeper
+zookeeper.connect={{ kafka_zookeeper_connect }}
+zookeeper.connection.timeout.ms=18000
+
+# Group Coordinator Settings
+group.initial.rebalance.delay.ms=0 

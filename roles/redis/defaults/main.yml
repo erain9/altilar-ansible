@@ -1,0 +1,7 @@
+---
+# Defaults for Redis role
+
+redis_port: 6379
+redis_bind_address: "0.0.0.0" # Listen on all interfaces
+redis_requirepass: "" # Empty means no password required
+redis_maxmemory: "" # e.g., "256mb" 

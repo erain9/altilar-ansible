@@ -1,0 +1,23 @@
+# Kafka systemd service unit file
+# Managed by Ansible - {{ ansible_managed }}
+[Unit]
+Description=Apache Kafka Server
+Requires=zookeeper.service
+After=zookeeper.service network.target
+
+[Service]
+Type=simple
+User={{ kafka_user }}
+Group={{ kafka_group }}
+
+Environment="JAVA_HOME={{ detected_java_home | default('/usr/lib/jvm/java-11-openjdk-amd64') }}" # Use detected JAVA_HOME
+Environment="KAFKA_HEAP_OPTS=-Xmx1G -Xms1G"
+Environment="KAFKA_LOG4J_OPTS=-Dlog4j.configuration=file:{{ kafka_config_dir }}/log4j.properties"
+
+ExecStart={{ kafka_install_dir }}/bin/kafka-server-start.sh {{ kafka_config_dir }}/server.properties
+ExecStop={{ kafka_install_dir }}/bin/kafka-server-stop.sh
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target 

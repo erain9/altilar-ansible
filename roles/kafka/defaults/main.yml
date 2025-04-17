@@ -1,0 +1,33 @@
+---
+# Defaults for Kafka role
+
+# Java dependency
+kafka_java_package: default-jre-headless
+
+# Zookeeper configuration (installed as dependency)
+zookeeper_data_dir: /var/lib/zookeeper
+zookeeper_client_port: 2181
+
+# Kafka user and group
+kafka_user: kafka
+kafka_group: kafka
+
+# Kafka installation paths
+kafka_install_dir: /opt/kafka
+kafka_log_dirs: /var/lib/kafka
+kafka_config_dir: "{{ kafka_install_dir }}/config"
+kafka_version: "3.7.1" # Specify desired Kafka version
+kafka_scala_version: "2.13" # Specify desired Scala version
+# Updated URL structure based on common Apache mirror patterns
+kafka_archive_url: "https://archive.apache.org/dist/kafka/{{ kafka_version }}/kafka_{{ kafka_scala_version }}-{{ kafka_version }}.tgz"
+kafka_download_dest: "/tmp/kafka_{{ kafka_scala_version }}-{{ kafka_version }}.tgz"
+kafka_extracted_dir_name: "kafka_{{ kafka_scala_version }}-{{ kafka_version }}"
+
+# Kafka broker configuration
+kafka_broker_id: 0
+kafka_port: 9092
+kafka_zookeeper_connect: "localhost:{{ zookeeper_client_port }}"
+kafka_listeners: "PLAINTEXT://0.0.0.0:{{ kafka_port }}" # Listen on all interfaces
+kafka_advertised_listeners: "PLAINTEXT://{{ ansible_default_ipv4.address | default('127.0.0.1') }}:{{ kafka_port }}"
+kafka_num_partitions: 1
+kafka_replication_factor: 1 

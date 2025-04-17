@@ -1,0 +1,43 @@
+---
+# Main tasks for Redis role
+
+- name: Install Redis server
+  become: true
+  ansible.builtin.package:
+    name: redis-server
+    state: present
+
+- name: Configure Redis
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: "^{{ item.option }}"
+    line: "{{ item.option }} {{ item.value }}"
+    owner: redis
+    group: redis
+    mode: '0640'
+  loop:
+    - { option: 'bind', value: '{{ redis_bind_address }}' }
+    - { option: 'port', value: '{{ redis_port }}' }
+    - { option: 'requirepass', value: '"{{ redis_requirepass }}"' } # Quote password if set
+    - { option: 'maxmemory', value: '{{ redis_maxmemory }}' }
+  notify:
+    - Restart redis
+  when: item.value != ""
+
+- name: Ensure Redis service is enabled and running
+  become: true
+  ansible.builtin.systemd:
+    name: redis-server
+    state: started
+    enabled: true
+
+- name: Verify Redis is running
+  become: false # redis-cli might not need sudo if run locally
+  ansible.builtin.command:
+    cmd: redis-cli ping
+  register: redis_ping_result
+  changed_when: false
+  failed_when: "redis_ping_result.stdout != 'PONG'"
+  retries: 3 # Give Redis a few seconds to start
+  delay: 5   # Wait 5 seconds between retries 

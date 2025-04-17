@@ -1,4 +1,4 @@
-.PHONY: all install install-no-pass setup deps deps-ignore check check-no-pass install-basic install-docker install-dev-tools install-nvm install-all help
+.PHONY: all install install-no-pass setup deps deps-ignore check check-no-pass install-basic install-docker install-dev-tools install-nvm install-redis install-kafka install-all help
 
 # Default target
 all: help
@@ -26,16 +26,9 @@ install-ignore-deps: deps-ignore
 install-ignore-deps-no-pass: deps-ignore
 	$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS_NO_PASS)
 
-# Setup only specific roles by tags
+# Setup only specific roles by tags (no password prompt)
 setup:
 	@echo "Usage: make setup TAGS=tag1,tag2"
-	@if [ -n "$(TAGS)" ]; then \
-		$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS) --tags $(TAGS); \
-	fi
-
-# Setup only specific roles by tags (no password prompt)
-setup-no-pass:
-	@echo "Usage: make setup-no-pass TAGS=tag1,tag2"
 	@if [ -n "$(TAGS)" ]; then \
 		$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS_NO_PASS) --tags $(TAGS); \
 	fi
@@ -72,9 +65,17 @@ install-dev-tools:
 install-nvm:
 	$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS_NO_PASS) --tags node,javascript,web
 
-# Full installation broken into steps to avoid permission issues
+# Setup Redis Service (no password prompt)
+install-redis:
+	$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS_NO_PASS) --tags redis
+
+# Setup Kafka Service (no password prompt)
+install-kafka:
+	$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS_NO_PASS) --tags kafka
+
+# Full WORKSTATION installation broken into steps to avoid permission issues
 install-all: install-basic install-dev-tools install-docker install-nvm
-	@echo "All components installed successfully"
+	@echo "Workstation components installed successfully (Redis/Kafka separate)"
 
 # Display help information
 help:
@@ -85,8 +86,7 @@ help:
 	@echo "  make install-no-pass            Install everything (no password prompt)"
 	@echo "  make install-ignore-deps        Install ignoring dependency errors (with password)"
 	@echo "  make install-ignore-deps-no-pass Install ignoring dependency errors (no password)"
-	@echo "  make setup TAGS=x               Setup specific components (with password)"
-	@echo "  make setup-no-pass TAGS=x       Setup specific components (no password)"
+	@echo "  make setup TAGS=x               Setup specific components (no password prompt)"
 	@echo "  make deps                       Install required Ansible dependencies"
 	@echo "  make deps-ignore                Install dependencies, ignoring errors"
 	@echo "  make check                      Run a check (with password prompt)"
@@ -95,7 +95,9 @@ help:
 	@echo "  make install-docker             Install Docker (no password prompt)"
 	@echo "  make install-dev-tools          Install dev tools (no password prompt)"
 	@echo "  make install-nvm                Install NVM (Node.js)"
-	@echo "  make install-all                Install all components"
+	@echo "  make install-redis              Install Redis service"
+	@echo "  make install-kafka              Install Kafka service (includes Zookeeper)"
+	@echo "  make install-all                Install all workstation components (excludes services)"
 	@echo "  make help                       Display this help message"
 	@echo ""
-	@echo "Note: Commands with '-no-pass' don't prompt for sudo password" 
+	@echo "Note: Use 'make install' or 'make check' for password prompt if needed." 

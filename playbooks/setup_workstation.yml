@@ -34,6 +34,14 @@
     # Golang via GVM
     - role: gvm
       tags: ['go', 'golang']
+
+    # Redis Server
+    - role: redis
+      tags: ['redis', 'service']
+
+    # Kafka Server (includes Zookeeper)
+    - role: kafka
+      tags: ['kafka', 'service']
   
   tasks:
     - name: Ensure system is up to date
