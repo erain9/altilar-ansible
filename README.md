@@ -31,11 +31,52 @@ Install diagnostic and hardware tools:
 ansible-playbook playbooks/install_diagnostic_tools.yml
 ```
 
+Install development environment (Docker, Node.js with NVM, Golang with GVM):
+
+```bash
+ansible-playbook playbooks/install_dev_environment.yml
+```
+
 Set up a complete workstation:
 
 ```bash
 ansible-playbook playbooks/setup_workstation.yml
 ```
+
+### Using Tags
+
+You can use tags to selectively run parts of the playbooks:
+
+```bash
+# Install only Docker
+ansible-playbook playbooks/setup_workstation.yml --tags docker
+
+# Install Node.js and Golang
+ansible-playbook playbooks/setup_workstation.yml --tags "node,go"
+```
+
+## Development Environment
+
+This project sets up a complete development environment with:
+
+### Docker without sudo
+
+- Installs Docker CE and Docker Compose
+- Configures user to run Docker commands without sudo
+- Configures Docker daemon with sensible defaults
+
+### Node.js via NVM
+
+- Installs Node Version Manager (NVM)
+- Installs multiple Node.js versions
+- Sets up global NPM packages
+- Configures shell for NVM access
+
+### Golang via GVM
+
+- Installs Go Version Manager (GVM)
+- Installs multiple Go versions
+- Configures shell for GVM access
 
 ## Using Ansible Galaxy
 

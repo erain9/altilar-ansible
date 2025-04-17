@@ -5,9 +5,29 @@
   gather_facts: true
   
   roles:
-    - common
-    - dev_tools
-    - diagnostic_tools
+    # Basic tools
+    - role: common
+      tags: ['common', 'basic']
+    
+    # Developer tools
+    - role: dev_tools
+      tags: ['dev', 'tools']
+    
+    # Diagnostic tools
+    - role: diagnostic_tools
+      tags: ['diagnostic', 'tools']
+    
+    # Docker (no sudo)
+    - role: docker_no_sudo
+      tags: ['docker', 'container']
+    
+    # Node.js via NVM
+    - role: nvm
+      tags: ['node', 'javascript', 'web']
+    
+    # Golang via GVM
+    - role: gvm
+      tags: ['go', 'golang']
   
   tasks:
     - name: Ensure system is up to date

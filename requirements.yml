@@ -3,8 +3,17 @@
 collections:
   - ansible.posix
   - community.general
+  - community.docker
 
 # External roles
 roles:
+  # Docker
   - name: geerlingguy.docker
-  - name: geerlingguy.nodejs 
+  
+  # Node.js (NVM)
+  - name: robertdebock.nodejs
+  - name: oefenweb.nvm
+  
+  # Development tools
+  - name: gantsign.visual-studio-code
+  - name: geerlingguy.git 

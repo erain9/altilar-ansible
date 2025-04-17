@@ -1,0 +1,31 @@
+---
+- name: Install Development Environment
+  hosts: workstations
+  become: true
+  gather_facts: true
+  
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+      changed_when: false
+
+  roles:
+    # Docker (no sudo)
+    - role: docker_no_sudo
+      tags: ['docker']
+    
+    # Node.js via NVM
+    - role: nvm
+      tags: ['node', 'javascript']
+    
+    # Golang via GVM
+    - role: gvm
+      tags: ['go', 'golang']
+      
+  post_tasks:
+    - name: Check installations
+      ansible.builtin.debug:
+        msg: "Development environment setup completed successfully" 

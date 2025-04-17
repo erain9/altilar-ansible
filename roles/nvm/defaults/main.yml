@@ -1,0 +1,31 @@
+---
+# Default variables for Node Version Manager (NVM)
+
+# NVM version to install
+nvm_version: "0.39.7"
+
+# Default Node.js version to install
+node_version: "20.10.0"
+
+# Additional Node.js versions to install
+node_versions:
+  - "18.19.0"
+  - "16.20.2"
+
+# Set the default Node.js version
+node_default_version: "{{ node_version }}"
+
+# User who will have NVM installed
+nvm_user: "{{ ansible_user_id }}"
+nvm_group: "{{ ansible_user_id }}"
+
+# Where to install NVM
+nvm_install_path: "~{{ nvm_user }}/.nvm"
+
+# Default global NPM packages to install
+nvm_npm_global_packages:
+  - name: npm
+    version: latest
+  - name: yarn
+  - name: pnpm
+  - name: eslint 

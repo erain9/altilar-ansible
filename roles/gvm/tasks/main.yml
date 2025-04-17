@@ -1,0 +1,74 @@
+---
+- name: Install GVM dependencies
+  ansible.builtin.package:
+    name: "{{ gvm_dependencies }}"
+    state: present
+  become: true
+
+- name: Check if GVM is already installed
+  ansible.builtin.stat:
+    path: "{{ gvm_install_path }}/scripts/gvm"
+  register: gvm_installed
+  become: false
+
+- name: Download and install GVM
+  ansible.builtin.shell: |
+    curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer | bash
+  args:
+    creates: "{{ gvm_install_path }}/scripts/gvm"
+  become: false
+  become_user: "{{ gvm_user }}"
+  when: not gvm_installed.stat.exists
+
+- name: Add GVM to shell initialization files
+  ansible.builtin.blockinfile:
+    path: "~{{ gvm_user }}/{{ item }}"
+    create: true
+    mode: '0644'
+    block: |
+      # GVM Configuration
+      [[ -s "{{ gvm_install_path }}/scripts/gvm" ]] && source "{{ gvm_install_path }}/scripts/gvm"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - GVM"
+  become: false
+  become_user: "{{ gvm_user }}"
+  with_items:
+    - .bashrc
+    - .zshrc
+  ignore_errors: true
+
+- name: Install default Go version
+  ansible.builtin.shell: |
+    source {{ gvm_install_path }}/scripts/gvm
+    gvm install go{{ go_version }}
+    gvm use go{{ go_version }} --default
+  args:
+    executable: /bin/bash
+    creates: "{{ gvm_install_path }}/gos/go{{ go_version }}"
+  become: false
+  become_user: "{{ gvm_user }}"
+
+- name: Install additional Go versions
+  ansible.builtin.shell: |
+    source {{ gvm_install_path }}/scripts/gvm
+    gvm install go{{ item }}
+  args:
+    executable: /bin/bash
+    creates: "{{ gvm_install_path }}/gos/go{{ item }}"
+  become: false
+  become_user: "{{ gvm_user }}"
+  with_items: "{{ go_versions }}"
+
+- name: Check Go installation
+  ansible.builtin.shell: |
+    source {{ gvm_install_path }}/scripts/gvm
+    go version
+  args:
+    executable: /bin/bash
+  become: false
+  become_user: "{{ gvm_user }}"
+  register: go_version_output
+  changed_when: false
+
+- name: Show installed Go version
+  ansible.builtin.debug:
+    msg: "{{ go_version_output.stdout }}" 

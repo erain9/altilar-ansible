@@ -1,0 +1,33 @@
+---
+# Default variables for Golang Version Manager (GVM)
+
+# GVM version to install
+gvm_version: master
+
+# Default Go version to install
+go_version: "1.20"
+
+# Additional Go versions to install
+go_versions:
+  - "1.19"
+  - "1.21"
+
+# Set the default Go version
+go_default_version: "{{ go_version }}"
+
+# User who will have GVM installed
+gvm_user: "{{ ansible_user_id }}"
+gvm_group: "{{ ansible_user_id }}"
+
+# Where to install GVM
+gvm_install_path: "~{{ gvm_user }}/.gvm"
+
+# GVM installation dependencies
+gvm_dependencies:
+  - curl
+  - git
+  - bison
+  - gcc
+  - make
+  - binutils
+  - build-essential 

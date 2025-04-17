@@ -1,0 +1,95 @@
+---
+- name: Install NVM dependencies
+  ansible.builtin.package:
+    name:
+      - curl
+      - git
+      - ca-certificates
+    state: present
+  become: true
+
+- name: Check if NVM is already installed
+  ansible.builtin.stat:
+    path: "{{ nvm_install_path }}/nvm.sh"
+  register: nvm_installed
+  become: false
+
+- name: Download and install NVM
+  ansible.builtin.shell: |
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v{{ nvm_version }}/install.sh | bash
+  args:
+    creates: "{{ nvm_install_path }}/nvm.sh"
+  become: false
+  become_user: "{{ nvm_user }}"
+  when: not nvm_installed.stat.exists
+
+- name: Add NVM to shell initialization files
+  ansible.builtin.blockinfile:
+    path: "~{{ nvm_user }}/{{ item }}"
+    create: true
+    mode: '0644'
+    block: |
+      # NVM Configuration
+      export NVM_DIR="{{ nvm_install_path }}"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+      [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - NVM"
+  become: false
+  become_user: "{{ nvm_user }}"
+  with_items:
+    - .bashrc
+    - .zshrc
+  ignore_errors: true
+
+- name: Install default Node.js version
+  ansible.builtin.shell: |
+    source {{ nvm_install_path }}/nvm.sh
+    nvm install {{ node_version }}
+    nvm alias default {{ node_default_version }}
+  args:
+    executable: /bin/bash
+  become: false
+  become_user: "{{ nvm_user }}"
+  register: nvm_default_node_installed
+  changed_when: "'is already installed' not in nvm_default_node_installed.stdout"
+  
+- name: Install additional Node.js versions
+  ansible.builtin.shell: |
+    source {{ nvm_install_path }}/nvm.sh
+    nvm install {{ item }}
+  args:
+    executable: /bin/bash
+  become: false
+  become_user: "{{ nvm_user }}"
+  register: nvm_node_installed
+  changed_when: "'is already installed' not in nvm_node_installed.stdout"
+  with_items: "{{ node_versions }}"
+
+- name: Install global NPM packages for default Node.js version
+  ansible.builtin.shell: |
+    source {{ nvm_install_path }}/nvm.sh
+    nvm use {{ node_default_version }}
+    npm install -g {{ item.name }}{% if item.version is defined and item.version != 'latest' %}@{{ item.version }}{% endif %}
+  args:
+    executable: /bin/bash
+  become: false
+  become_user: "{{ nvm_user }}"
+  with_items: "{{ nvm_npm_global_packages }}"
+  register: npm_install_result
+  changed_when: "'added' in npm_install_result.stdout"
+
+- name: Check Node.js installation
+  ansible.builtin.shell: |
+    source {{ nvm_install_path }}/nvm.sh
+    node -v
+    npm -v
+  args:
+    executable: /bin/bash
+  become: false
+  become_user: "{{ nvm_user }}"
+  register: node_version_output
+  changed_when: false
+
+- name: Show installed Node.js version
+  ansible.builtin.debug:
+    msg: "{{ node_version_output.stdout_lines }}" 
