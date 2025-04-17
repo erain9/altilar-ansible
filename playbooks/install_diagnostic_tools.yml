@@ -1,0 +1,70 @@
+---
+- name: Install Diagnostic and Hardware Tools
+  hosts: workstations
+  become: true
+  become_method: sudo
+  gather_facts: true
+  
+  tasks:
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: true
+      changed_when: false
+      when: ansible_os_family == "Debian"
+        
+    - name: Install diagnostic and hardware tools
+      ansible.builtin.package:
+        name:
+          - lshw          # Hardware lister
+          - hwinfo        # Hardware information
+          - inxi          # System information
+          - dmidecode     # DMI table decoder
+          - sysstat       # Performance monitoring tools
+          - pciutils      # PCI utilities (lspci)
+          - usbutils      # USB utilities (lsusb)
+          - hdparm        # Hard disk parameters
+          - smartmontools # SMART monitoring tools
+          - lm-sensors    # Hardware monitoring
+          - iproute2      # Modern network tools (ip command)
+          - procps        # System utilities (ps, top, etc.)
+          - lsof          # List open files
+          - psmisc        # Process utilities (pstree, killall, etc.)
+          - nmap          # Network exploration and security auditing
+        state: present
+        
+    - name: Test ifconfig availability
+      ansible.builtin.command: which ifconfig
+      register: ifconfig_check
+      changed_when: false
+      failed_when: false
+      
+    - name: Display ifconfig status
+      ansible.builtin.debug:
+        msg: "ifconfig command is {{ 'available' if ifconfig_check.rc == 0 else 'not available' }}"
+        
+    - name: Run hardware info commands
+      ansible.builtin.shell: |
+        echo "===== SYSTEM INFORMATION ====="
+        inxi -F 2>/dev/null || echo "inxi not installed"
+        echo ""
+        echo "===== CPU INFO ====="
+        lscpu 2>/dev/null || echo "lscpu not installed"
+        echo ""
+        echo "===== MEMORY INFO ====="
+        free -h 2>/dev/null || echo "free not installed"
+        echo ""
+        echo "===== DISK INFO ====="
+        lsblk 2>/dev/null || echo "lsblk not installed"
+        echo ""
+        echo "===== PCI DEVICES ====="
+        lspci 2>/dev/null || echo "lspci not installed"
+        echo ""
+        echo "===== USB DEVICES ====="
+        lsusb 2>/dev/null || echo "lsusb not installed"
+      register: hardware_info
+      changed_when: false
+      
+    - name: Display hardware information
+      ansible.builtin.debug:
+        msg: "{{ hardware_info.stdout_lines }}"
+        verbosity: 1 

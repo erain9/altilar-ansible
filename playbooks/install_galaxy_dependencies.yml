@@ -1,0 +1,28 @@
+---
+- name: Install Ansible Galaxy Dependencies
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Install Galaxy roles
+      ansible.builtin.command: ansible-galaxy role install -r ../requirements.yml
+      args:
+        chdir: "{{ playbook_dir }}"
+      register: galaxy_roles_result
+      changed_when: "'was installed successfully' in galaxy_roles_result.stdout"
+      
+    - name: Display roles result
+      ansible.builtin.debug:
+        var: galaxy_roles_result.stdout_lines
+      
+    - name: Install Galaxy collections
+      ansible.builtin.command: ansible-galaxy collection install -r ../requirements.yml
+      args:
+        chdir: "{{ playbook_dir }}"
+      register: galaxy_collections_result
+      changed_when: "'was installed successfully' in galaxy_collections_result.stdout"
+      
+    - name: Display collections result
+      ansible.builtin.debug:
+        var: galaxy_collections_result.stdout_lines 

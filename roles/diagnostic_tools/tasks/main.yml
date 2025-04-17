@@ -1,0 +1,21 @@
+---
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: true
+  changed_when: false
+  when: ansible_os_family == "Debian"
+
+- name: Install diagnostic tools
+  ansible.builtin.package:
+    name: "{{ diagnostic_tools_packages }}"
+    state: present
+  
+- name: Test ifconfig availability
+  ansible.builtin.command: which ifconfig
+  register: ifconfig_check
+  changed_when: false
+  failed_when: false
+  
+- name: Display ifconfig status
+  ansible.builtin.debug:
+    msg: "ifconfig command is {{ 'available' if ifconfig_check.rc == 0 else 'not available' }}" 

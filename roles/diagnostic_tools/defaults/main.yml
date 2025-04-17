@@ -1,34 +1,26 @@
 ---
 # Default packages to install
-dev_tools_packages:
-  # Basic tools
-  - wget
-  - curl
-  - htop
-  - git
-  - vim
-  - tmux
-  - zip
-  - unzip
-  - jq
-  - tree
-  - net-tools   # Includes ifconfig
-  - dnsutils
-  - iotop
-  
-  # Hardware and diagnostic tools
+diagnostic_tools_packages:
+  # Hardware information tools
   - lshw        # Hardware lister
   - hwinfo      # Hardware information
   - inxi        # System information
   - dmidecode   # DMI table decoder
-  - sysstat     # Performance monitoring tools
   - pciutils    # PCI utilities (lspci)
   - usbutils    # USB utilities (lsusb)
+  - lm-sensors  # Hardware monitoring
+  
+  # Disk utilities
   - hdparm      # Hard disk parameters
   - smartmontools # SMART monitoring tools
-  - lm-sensors  # Hardware monitoring
-  - iproute2    # Modern network tools (ip command)
-  - procps      # System utilities (ps, top, etc.)
-  - lsof        # List open files
+  
+  # System monitoring
+  - sysstat     # Performance monitoring tools
+  - iotop       # I/O monitoring
   - psmisc      # Process utilities (pstree, killall, etc.)
+  - lsof        # List open files
+  
+  # Network tools
+  - iproute2    # Modern network tools (ip command)
+  - net-tools   # Traditional network tools (ifconfig, etc.)
   - nmap        # Network exploration and security auditing 

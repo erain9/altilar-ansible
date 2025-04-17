@@ -1,0 +1,10 @@
+---
+# External collections
+collections:
+  - ansible.posix
+  - community.general
+
+# External roles
+roles:
+  - name: geerlingguy.docker
+  - name: geerlingguy.nodejs 

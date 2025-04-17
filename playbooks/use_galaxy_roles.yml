@@ -1,0 +1,31 @@
+---
+- name: Use External Galaxy Roles
+  hosts: workstations
+  become: true
+  gather_facts: true
+  
+  roles: []
+  # Uncomment roles when ready to use them
+  # - geerlingguy.docker
+  # - geerlingguy.nodejs
+    
+  tasks:
+    - name: List available Galaxy roles
+      ansible.builtin.command: ansible-galaxy role list
+      delegate_to: localhost
+      register: galaxy_roles
+      changed_when: false
+      
+    - name: Display available Galaxy roles
+      ansible.builtin.debug:
+        var: galaxy_roles.stdout_lines
+        
+    - name: List available Galaxy collections
+      ansible.builtin.command: ansible-galaxy collection list
+      delegate_to: localhost
+      register: galaxy_collections
+      changed_when: false
+      
+    - name: Display available Galaxy collections
+      ansible.builtin.debug:
+        var: galaxy_collections.stdout_lines 
