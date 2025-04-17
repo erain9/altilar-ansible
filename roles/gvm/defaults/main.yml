@@ -10,17 +10,17 @@ go_version: "1.20"
 # Additional Go versions to install
 go_versions:
   - "1.19"
-  - "1.21"
+  # - "1.21" # Removed as binary download failed
 
 # Set the default Go version
 go_default_version: "{{ go_version }}"
 
 # User who will have GVM installed
-gvm_user: "{{ ansible_user_id }}"
-gvm_group: "{{ ansible_user_id }}"
+gvm_user: "{{ ansible_user }}"
+gvm_group: "{{ ansible_user }}"
 
 # Where to install GVM
-gvm_install_path: "~{{ gvm_user }}/.gvm"
+gvm_install_path: "/home/{{ gvm_user }}/.gvm"
 
 # GVM installation dependencies
 gvm_dependencies:

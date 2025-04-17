@@ -5,70 +5,87 @@
     state: present
   become: true
 
+- name: Define GVM user home directory
+  ansible.builtin.set_fact:
+    gvm_user_home: "/home/{{ gvm_user }}"
+
 - name: Check if GVM is already installed
   ansible.builtin.stat:
     path: "{{ gvm_install_path }}/scripts/gvm"
   register: gvm_installed
-  become: false
+  become: false # Check as connecting user
 
 - name: Download and install GVM
-  ansible.builtin.shell: |
-    curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer | bash
-  args:
+  ansible.builtin.shell:
+    cmd: curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer | bash
     creates: "{{ gvm_install_path }}/scripts/gvm"
-  become: false
+  become: true # Become root to switch user
   become_user: "{{ gvm_user }}"
-  when: not gvm_installed.stat.exists
+  when: not gvm_installed.stat.exists | default(false)
+  environment:
+    HOME: "{{ gvm_user_home }}"
 
-- name: Add GVM to shell initialization files
+- name: Add GVM sourcing to shell initialization files
   ansible.builtin.blockinfile:
-    path: "~{{ gvm_user }}/{{ item }}"
+    path: "{{ gvm_user_home }}/{{ item }}"
     create: true
+    owner: "{{ gvm_user }}"
+    group: "{{ gvm_group }}"
     mode: '0644'
     block: |
-      # GVM Configuration
+      # GVM Configuration - ANSIBLE MANAGED BLOCK
       [[ -s "{{ gvm_install_path }}/scripts/gvm" ]] && source "{{ gvm_install_path }}/scripts/gvm"
     marker: "# {mark} ANSIBLE MANAGED BLOCK - GVM"
-  become: false
-  become_user: "{{ gvm_user }}"
-  with_items:
+  become: false # Run as connecting user
+  loop:
     - .bashrc
     - .zshrc
-  ignore_errors: true
+
+# Helper function to source GVM before running commands as gvm_user
+- name: Define GVM command prefix
+  ansible.builtin.set_fact:
+    gvm_command_prefix: "[[ -s \"{{ gvm_install_path }}/scripts/gvm\" ]] && source \"{{ gvm_install_path }}/scripts/gvm\" &&"
 
 - name: Install default Go version
-  ansible.builtin.shell: |
-    source {{ gvm_install_path }}/scripts/gvm
-    gvm install go{{ go_version }}
-    gvm use go{{ go_version }} --default
+  ansible.builtin.shell:
+    cmd: "{{ gvm_command_prefix }} gvm install go{{ go_version }} --binary && {{ gvm_command_prefix }} gvm use go{{ go_version }} --default || true"
   args:
     executable: /bin/bash
     creates: "{{ gvm_install_path }}/gos/go{{ go_version }}"
-  become: false
+  become: true # Become root to switch user
   become_user: "{{ gvm_user }}"
+  environment:
+    HOME: "{{ gvm_user_home }}"
+  register: go_default_install_result
+  changed_when: "'Installed' in go_default_install_result.stdout"
 
 - name: Install additional Go versions
-  ansible.builtin.shell: |
-    source {{ gvm_install_path }}/scripts/gvm
-    gvm install go{{ item }}
+  ansible.builtin.shell:
+    cmd: "{{ gvm_command_prefix }} gvm install go{{ item }} --binary || true"
   args:
     executable: /bin/bash
     creates: "{{ gvm_install_path }}/gos/go{{ item }}"
-  become: false
+  become: true # Become root to switch user
   become_user: "{{ gvm_user }}"
-  with_items: "{{ go_versions }}"
+  environment:
+    HOME: "{{ gvm_user_home }}"
+  loop: "{{ go_versions }}"
+  register: go_additional_install_result
+  changed_when: "'Installed' in go_additional_install_result.stdout"
 
-- name: Check Go installation
-  ansible.builtin.shell: |
-    source {{ gvm_install_path }}/scripts/gvm
-    go version
+- name: Verify GVM and Go installation
+  ansible.builtin.shell:
+    cmd: "{{ gvm_command_prefix }} gvm version && {{ gvm_command_prefix }} go version"
   args:
     executable: /bin/bash
-  become: false
+  become: true # Become root to switch user
   become_user: "{{ gvm_user }}"
   register: go_version_output
   changed_when: false
+  failed_when: false # Don't fail playbook if check fails
+  environment:
+    HOME: "{{ gvm_user_home }}"
 
-- name: Show installed Go version
+- name: Show installed GVM and Go version
   ansible.builtin.debug:
-    msg: "{{ go_version_output.stdout }}" 
+    msg: "{{ go_version_output.stdout_lines | default(['GVM/Go check failed or not installed']) }}" 

@@ -1,4 +1,4 @@
-.PHONY: all install install-no-pass setup deps deps-ignore check check-no-pass install-basic install-docker install-dev-tools install-nvm install-redis install-kafka install-all help
+.PHONY: all install install-no-pass setup deps deps-ignore check check-no-pass install-basic install-docker install-dev-tools install-nvm install-redis install-kafka install-go install-all help
 
 # Default target
 all: help
@@ -73,9 +73,13 @@ install-redis:
 install-kafka:
 	$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS_NO_PASS) --tags kafka
 
+# Setup Go (GVM) (no password prompt)
+install-go:
+	$(ANSIBLE_PLAYBOOK) $(WORKSTATION_PLAYBOOK) -i $(INVENTORY) $(ANSIBLE_OPTS_NO_PASS) --tags go,golang
+
 # Full WORKSTATION installation broken into steps to avoid permission issues
 install-all: install-basic install-dev-tools install-docker install-nvm
-	@echo "Workstation components installed successfully (Redis/Kafka separate)"
+	@echo "Workstation components installed successfully (Redis/Kafka/Go separate)"
 
 # Display help information
 help:
@@ -97,7 +101,8 @@ help:
 	@echo "  make install-nvm                Install NVM (Node.js)"
 	@echo "  make install-redis              Install Redis service"
 	@echo "  make install-kafka              Install Kafka service (includes Zookeeper)"
-	@echo "  make install-all                Install all workstation components (excludes services)"
+	@echo "  make install-go                 Install Go (GVM)"
+	@echo "  make install-all                Install all workstation components (excludes services/Go)"
 	@echo "  make help                       Display this help message"
 	@echo ""
 	@echo "Note: Use 'make install' or 'make check' for password prompt if needed." 
