@@ -12,7 +12,19 @@ Ansible scripts for setting up Altilar Linux workstation environments.
 
 ## Usage
 
-To set up a workstation:
+Test connectivity to your workstations:
+
+```bash
+ansible-playbook playbooks/test_connectivity.yml
+```
+
+Install developer tools on your workstations:
+
+```bash
+ansible-playbook playbooks/install_dev_tools.yml
+```
+
+Set up a complete workstation:
 
 ```bash
 ansible-playbook playbooks/setup_workstation.yml

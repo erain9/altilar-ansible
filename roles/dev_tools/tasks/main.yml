@@ -1,0 +1,26 @@
+---
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: true
+  changed_when: false
+  when: ansible_os_family == "Debian"
+
+- name: Install developer tools
+  ansible.builtin.package:
+    name: "{{ dev_tools_packages }}"
+    state: present
+  
+- name: Check installed versions
+  ansible.builtin.shell: |
+    echo "Installed Tools:"
+    {% for package in dev_tools_packages %}
+    dpkg-query -W -f='${Package} ${Status} ${Version}\n' {{ package }} 2>/dev/null || echo "{{ package }} not installed"
+    {% endfor %}
+  register: installed_versions
+  changed_when: false
+  when: ansible_os_family == "Debian"
+  
+- name: Show installed tools
+  ansible.builtin.debug:
+    msg: "{{ installed_versions.stdout_lines }}"
+  when: ansible_os_family == "Debian" 

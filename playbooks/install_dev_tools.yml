@@ -1,0 +1,11 @@
+---
+- name: Install Developer Tools
+  hosts: workstations
+  become: true
+  become_method: sudo
+  gather_facts: true
+  vars:
+    ansible_become_pass: ""
+  
+  roles:
+    - dev_tools 

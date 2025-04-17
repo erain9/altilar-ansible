@@ -1,0 +1,35 @@
+---
+- name: Basic Test
+  hosts: workstations
+  gather_facts: true
+  become: false
+  
+  tasks:
+    - name: Get user information
+      ansible.builtin.command: id
+      register: user_info
+      changed_when: false
+      
+    - name: Display user information
+      ansible.builtin.debug:
+        msg: "{{ user_info.stdout }}"
+    
+    - name: Get OS information
+      ansible.builtin.command: cat /etc/os-release
+      register: os_info
+      changed_when: false
+      
+    - name: Display OS information
+      ansible.builtin.debug:
+        msg: "{{ os_info.stdout_lines }}"
+        
+    - name: Test sudo abilities
+      ansible.builtin.shell: echo "Current user can run the following commands with sudo" && sudo -l
+      register: sudo_info
+      changed_when: false
+      ignore_errors: true
+      
+    - name: Display sudo information
+      ansible.builtin.debug:
+        msg: "{{ sudo_info.stdout_lines | default([]) }}"
+        verbosity: 0 

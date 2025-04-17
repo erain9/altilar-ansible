@@ -1,5 +1,6 @@
 [workstations]
 # Add workstation hosts here
+df-home ansible_user=df ansible_become_method=sudo
 
 [workstations:vars]
 ansible_connection=ssh 

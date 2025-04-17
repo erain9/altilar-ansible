@@ -1,0 +1,24 @@
+---
+- name: Test Sudo Capabilities
+  hosts: workstations
+  gather_facts: false
+  
+  tasks:
+    - name: Check if user can sudo without password
+      ansible.builtin.shell: sudo -n true
+      register: sudo_result
+      failed_when: false
+      changed_when: false
+      
+    - name: Display sudo test results
+      ansible.builtin.debug:
+        msg: "User can use sudo without password: {{ sudo_result.rc == 0 }}"
+        
+    - name: Get OS information
+      ansible.builtin.shell: cat /etc/os-release
+      register: os_info
+      changed_when: false
+      
+    - name: Display OS information
+      ansible.builtin.debug:
+        msg: "{{ os_info.stdout_lines }}" 

@@ -1,0 +1,16 @@
+---
+# Default packages to install
+dev_tools_packages:
+  - wget
+  - curl
+  - htop
+  - git
+  - vim
+  - tmux
+  - zip
+  - unzip
+  - jq
+  - tree
+  - net-tools
+  - dnsutils
+  - iotop 

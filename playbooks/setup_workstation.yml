@@ -2,8 +2,11 @@
 - name: Setup Altilar Linux Workstation
   hosts: workstations
   become: true
+  gather_facts: true
   
-  roles: []
+  roles:
+    - common
+    - dev_tools
   
   tasks:
     - name: Ensure system is up to date
