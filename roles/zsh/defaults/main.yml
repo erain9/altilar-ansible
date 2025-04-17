@@ -10,6 +10,8 @@ oh_my_zsh_install: true
 oh_my_zsh_theme: "robbyrussell"
 
 # Oh My Zsh plugins to enable
+# Bundled: git, docker, kubectl, history, command-not-found, sudo, autojump, fzf
+# Custom: zsh-autosuggestions, zsh-completions
 oh_my_zsh_plugins:
   - git
   - docker
@@ -17,7 +19,10 @@ oh_my_zsh_plugins:
   - history
   - command-not-found
   - sudo
-  - z
+  - z # Replaces autojump plugin, often preferred
+  - fzf
+  - zsh-autosuggestions # Custom plugin
+  - zsh-completions     # Custom plugin
 
 # Whether to set zsh as the default shell
 set_zsh_as_default: true 
