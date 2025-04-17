@@ -2,12 +2,16 @@
 - name: Setup Altilar Linux Workstation
   hosts: workstations
   become: true
-  gather_facts: true
-  
+  gather_facts: true # Gather facts at the beginning
+
   roles:
     # Basic tools
     - role: common
       tags: ['common', 'basic']
+    
+    # Shell setup with ZSH and Oh My Zsh
+    - role: zsh
+      tags: ['zsh', 'shell', 'basic']
     
     # Developer tools
     - role: dev_tools
@@ -21,9 +25,11 @@
     - role: docker_no_sudo
       tags: ['docker', 'container']
     
-    # Node.js via NVM
+    # Node.js via NVM (using our custom role instead of Galaxy role)
     - role: nvm
       tags: ['node', 'javascript', 'web']
+      vars:
+        nvm_user: "{{ ansible_user }}" # Explicitly pass the user
     
     # Golang via GVM
     - role: gvm

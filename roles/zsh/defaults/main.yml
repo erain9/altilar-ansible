@@ -1,0 +1,23 @@
+---
+# Default variables for ZSH and Oh My Zsh
+
+# User who will have zsh and oh-my-zsh installed
+zsh_user: "{{ ansible_user }}"
+zsh_group: "{{ ansible_user }}"
+
+# Oh My Zsh installation
+oh_my_zsh_install: true
+oh_my_zsh_theme: "robbyrussell"
+
+# Oh My Zsh plugins to enable
+oh_my_zsh_plugins:
+  - git
+  - docker
+  - kubectl
+  - history
+  - command-not-found
+  - sudo
+  - z
+
+# Whether to set zsh as the default shell
+set_zsh_as_default: true 

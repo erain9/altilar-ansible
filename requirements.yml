@@ -10,10 +10,6 @@ roles:
   # Docker
   - name: geerlingguy.docker
   
-  # Node.js (NVM)
-  - name: robertdebock.nodejs
-  - name: oefenweb.nvm
-  
   # Development tools
   - name: gantsign.visual-studio-code
   - name: geerlingguy.git 

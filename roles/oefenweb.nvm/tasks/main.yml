@@ -1,0 +1,52 @@
+# tasks file
+---
+- name: install | dependencies
+  ansible.builtin.apt:
+    name: "{{ nvm_dependencies }}"
+    state: "{{ apt_install_state | default('latest') }}"
+    update_cache: true
+    cache_valid_time: "{{ apt_update_cache_valid_time | default(3600) }}"
+  tags:
+    - configuration
+    - nvm
+    - nvm-install
+    - nvm-install-dependencies
+
+- name: install | additional
+  ansible.builtin.apt:
+    name: "{{ nvm_install }}"
+    state: "{{ apt_install_state | default('latest') }}"
+  tags:
+    - configuration
+    - nvm
+    - nvm-install
+    - nvm-install-additional
+
+- name: install | nvm
+  tags:
+    - configuration
+    - nvm
+    - nvm-install
+  become: true
+  become_user: "{{ nvm_user }}"
+  block:
+    - name: install | nvm | get current version  # noqa command-instead-of-module
+      ansible.builtin.shell: >
+        git -C ~/.nvm tag --points-at=$(git -C ~/.nvm rev-parse HEAD)
+      register: _check
+      failed_when: false
+      changed_when: false
+      tags:
+        - nvm-install-get-current-version
+
+    - name: install | nvm | install given version  # noqa command-instead-of-module risky-shell-pipe
+      ansible.builtin.shell: >
+        curl -sSL https://raw.githubusercontent.com/nvm-sh/nvm/{{ nvm_version }}/install.sh | {{ nvm_shell }} -
+      args:
+        executable: "{{ nvm_shell }}"
+      environment:
+        PROFILE: /dev/null
+      changed_when: true
+      when: _check.rc != 0 or (_check.rc == 0 and _check.stdout is version(nvm_version, '!='))
+      tags:
+        - nvm-install-install-given-version

@@ -1,0 +1,6 @@
+# defaults file
+---
+nvm_version: 'v0.40.2'
+nvm_install: []
+nvm_user: root
+nvm_shell: /bin/bash

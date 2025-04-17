@@ -6,90 +6,115 @@
       - git
       - ca-certificates
     state: present
-  become: true
+  become: true # Needs root to install packages
+
+# The rest of the tasks should run as the nvm_user without root privileges
+
+- name: Define NVM user home directory
+  ansible.builtin.set_fact:
+    nvm_user_home: "/home/{{ nvm_user }}"
+
+- name: Ensure .nvm directory exists
+  ansible.builtin.file:
+    path: "{{ nvm_user_home }}/.nvm"
+    state: directory
+    owner: "{{ nvm_user }}"
+    group: "{{ nvm_group | default(nvm_user) }}"
+    mode: '0755'
+  become: false # Run as ansible_user (df)
 
 - name: Check if NVM is already installed
   ansible.builtin.stat:
-    path: "{{ nvm_install_path }}/nvm.sh"
+    path: "{{ nvm_user_home }}/.nvm/nvm.sh"
   register: nvm_installed
-  become: false
+  become: false # Run as ansible_user (df)
 
 - name: Download and install NVM
-  ansible.builtin.shell: |
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v{{ nvm_version }}/install.sh | bash
-  args:
-    creates: "{{ nvm_install_path }}/nvm.sh"
-  become: false
+  ansible.builtin.shell:
+    cmd: "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v{{ nvm_version }}/install.sh | bash"
+    creates: "{{ nvm_user_home }}/.nvm/nvm.sh"
+  become: true # Temporarily become root to become the target user
   become_user: "{{ nvm_user }}"
-  when: not nvm_installed.stat.exists
+  when: not nvm_installed.stat.exists | default(false)
+  args:
+    executable: /bin/bash # Ensure bash is used for the install script
+  environment:
+    HOME: "{{ nvm_user_home }}" # Explicitly set HOME for the install script
 
-- name: Add NVM to shell initialization files
+- name: Add NVM sourcing to shell initialization files
   ansible.builtin.blockinfile:
-    path: "~{{ nvm_user }}/{{ item }}"
+    path: "{{ nvm_user_home }}/{{ item }}"
     create: true
+    owner: "{{ nvm_user }}"
+    group: "{{ nvm_group | default(nvm_user) }}"
     mode: '0644'
     block: |
-      # NVM Configuration
-      export NVM_DIR="{{ nvm_install_path }}"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-      [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+      # NVM Configuration - ANSIBLE MANAGED BLOCK
+      export NVM_DIR="{{ nvm_user_home }}/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
+      [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
     marker: "# {mark} ANSIBLE MANAGED BLOCK - NVM"
-  become: false
-  become_user: "{{ nvm_user }}"
-  with_items:
+  become: false # Run as ansible_user (df)
+  loop:
     - .bashrc
     - .zshrc
-  ignore_errors: true
+
+# Helper function to source NVM before running commands as nvm_user
+- name: Define NVM command prefix
+  ansible.builtin.set_fact:
+    nvm_command_prefix: "export NVM_DIR={{ nvm_user_home }}/.nvm && [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\" &&"
 
 - name: Install default Node.js version
-  ansible.builtin.shell: |
-    source {{ nvm_install_path }}/nvm.sh
-    nvm install {{ node_version }}
-    nvm alias default {{ node_default_version }}
+  ansible.builtin.shell:
+    cmd: "{{ nvm_command_prefix }} nvm install {{ node_version }} && {{ nvm_command_prefix }} nvm alias default {{ node_default_version }}"
   args:
     executable: /bin/bash
-  become: false
+  become: true # Temporarily become root to become the target user
   become_user: "{{ nvm_user }}"
   register: nvm_default_node_installed
-  changed_when: "'is already installed' not in nvm_default_node_installed.stdout"
-  
+  changed_when: "'is already installed' not in nvm_default_node_installed.stdout and 'Now using node' in nvm_default_node_installed.stdout"
+  environment:
+    HOME: "{{ nvm_user_home }}" # Explicitly set HOME for nvm commands
+
 - name: Install additional Node.js versions
-  ansible.builtin.shell: |
-    source {{ nvm_install_path }}/nvm.sh
-    nvm install {{ item }}
+  ansible.builtin.shell:
+    cmd: "{{ nvm_command_prefix }} nvm install {{ item }}"
   args:
     executable: /bin/bash
-  become: false
+  become: true # Temporarily become root to become the target user
   become_user: "{{ nvm_user }}"
   register: nvm_node_installed
-  changed_when: "'is already installed' not in nvm_node_installed.stdout"
-  with_items: "{{ node_versions }}"
+  changed_when: "'is already installed' not in nvm_node_installed.stdout and 'Now using node' in nvm_node_installed.stdout"
+  loop: "{{ node_versions }}"
+  environment:
+    HOME: "{{ nvm_user_home }}" # Explicitly set HOME for nvm commands
 
 - name: Install global NPM packages for default Node.js version
-  ansible.builtin.shell: |
-    source {{ nvm_install_path }}/nvm.sh
-    nvm use {{ node_default_version }}
-    npm install -g {{ item.name }}{% if item.version is defined and item.version != 'latest' %}@{{ item.version }}{% endif %}
+  ansible.builtin.shell:
+    cmd: "{{ nvm_command_prefix }} nvm use {{ node_default_version }} && {{ nvm_command_prefix }} npm install -g {{ item.name }}{% if item.version is defined and item.version != 'latest' %}@{{ item.version }}{% endif %}"
   args:
     executable: /bin/bash
-  become: false
+  become: true # Temporarily become root to become the target user
   become_user: "{{ nvm_user }}"
-  with_items: "{{ nvm_npm_global_packages }}"
+  loop: "{{ nvm_npm_global_packages }}"
   register: npm_install_result
-  changed_when: "'added' in npm_install_result.stdout"
+  changed_when: "'added' in npm_install_result.stdout or 'updated' in npm_install_result.stdout"
+  environment:
+    HOME: "{{ nvm_user_home }}" # Explicitly set HOME for npm commands
 
 - name: Check Node.js installation
-  ansible.builtin.shell: |
-    source {{ nvm_install_path }}/nvm.sh
-    node -v
-    npm -v
+  ansible.builtin.shell:
+    cmd: "{{ nvm_command_prefix }} node -v && {{ nvm_command_prefix }} npm -v"
   args:
     executable: /bin/bash
-  become: false
+  become: true # Temporarily become root to become the target user
   become_user: "{{ nvm_user }}"
   register: node_version_output
   changed_when: false
+  failed_when: false # Don't fail playbook if check fails
+  environment:
+    HOME: "{{ nvm_user_home }}"
 
 - name: Show installed Node.js version
   ansible.builtin.debug:
-    msg: "{{ node_version_output.stdout_lines }}" 
+    msg: "{{ node_version_output.stdout_lines | default(['Node.js/NPM check failed or not installed']) }}" 

@@ -1,0 +1,72 @@
+---
+# Tasks for installing and configuring ZSH and Oh My Zsh
+
+- name: Install ZSH
+  become: true
+  package:
+    name: zsh
+    state: present
+
+- name: Define ZSH user home directory
+  ansible.builtin.set_fact:
+    zsh_user_home: "/home/{{ zsh_user }}"
+
+- name: Check if Oh My Zsh is installed
+  stat:
+    path: "{{ zsh_user_home }}/.oh-my-zsh"
+  register: oh_my_zsh_installed
+  when: oh_my_zsh_install | bool
+  become: false # Check as connecting user
+
+- name: Download Oh My Zsh installer
+  get_url:
+    url: https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+    dest: /tmp/oh-my-zsh-installer.sh
+    mode: '0755'
+  when: oh_my_zsh_install | bool and not oh_my_zsh_installed.stat.exists | default(false)
+  become: false # Download as connecting user
+
+- name: Install Oh My Zsh
+  become: true # Become root to switch user
+  become_user: "{{ zsh_user }}"
+  shell:
+    cmd: "sh /tmp/oh-my-zsh-installer.sh --unattended"
+  args:
+    creates: "{{ zsh_user_home }}/.oh-my-zsh"
+  when: oh_my_zsh_install | bool and not oh_my_zsh_installed.stat.exists | default(false)
+  environment:
+    HOME: "{{ zsh_user_home }}"
+    RUNZSH: "no" # Prevent installer from starting zsh
+    CHSH: "no" # Prevent installer from changing shell
+
+- name: Remove Oh My Zsh installer
+  file:
+    path: /tmp/oh-my-zsh-installer.sh
+    state: absent
+  when: oh_my_zsh_install | bool
+  become: false # Remove as connecting user
+
+- name: Configure Oh My Zsh theme
+  become: true # Become root to switch user
+  become_user: "{{ zsh_user }}"
+  lineinfile:
+    path: "{{ zsh_user_home }}/.zshrc"
+    regexp: '^ZSH_THEME='
+    line: 'ZSH_THEME="{{ oh_my_zsh_theme }}"'
+  when: oh_my_zsh_install | bool
+
+- name: Configure Oh My Zsh plugins
+  become: true # Become root to switch user
+  become_user: "{{ zsh_user }}"
+  lineinfile:
+    path: "{{ zsh_user_home }}/.zshrc"
+    regexp: '^plugins=\('
+    line: 'plugins=({{ oh_my_zsh_plugins | join(" ") }})'
+  when: oh_my_zsh_install | bool
+
+- name: Set ZSH as default shell
+  become: true # Needs root to change user shell
+  user:
+    name: "{{ zsh_user }}"
+    shell: /usr/bin/zsh # Use full path for safety
+  when: set_zsh_as_default | bool 

@@ -7,3 +7,11 @@
 #   - git
 #   - vim
 #   - curl 
+
+# Group variables for workstations
+
+# User for most operations
+ansible_user: df
+
+# Ensure sudo is used for privilege escalation
+ansible_become_method: sudo 

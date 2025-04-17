@@ -10,8 +10,32 @@ Ansible scripts for setting up Altilar Linux workstation environments.
 - `playbooks/`: Playbooks for different tasks
 - `roles/`: Reusable role definitions
 - `requirements.yml`: External dependencies from Ansible Galaxy
+- `Makefile`: Simplified commands for running Ansible playbooks
 
 ## Usage
+
+### Using the Makefile (Recommended)
+
+The simplest way to use this project is with the provided Makefile:
+
+```bash
+# Install everything (runs the complete workstation setup)
+make install
+
+# Install only specific components using tags
+make setup TAGS=zsh,dev_tools
+
+# Install dependencies from Ansible Galaxy
+make deps
+
+# Run a check without making changes
+make check
+
+# Show all available commands
+make help
+```
+
+### Using Ansible Directly
 
 Test connectivity to your workstations:
 

@@ -1,0 +1,14 @@
+# test file
+---
+- name: converge
+  hosts: all
+  remote_user: vagrant
+  become: true
+  roles:
+    - role: ../../
+      nvm_version: 'v0.40.1'
+    - role: ../../
+      nvm_user: vagrant
+  post_tasks:
+    - name: include tasks
+      ansible.builtin.import_tasks: "{{ playbook_dir }}/tasks/post.yml"

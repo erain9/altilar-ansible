@@ -15,17 +15,16 @@ node_versions:
 # Set the default Node.js version
 node_default_version: "{{ node_version }}"
 
-# User who will have NVM installed
-nvm_user: "{{ ansible_user_id }}"
-nvm_group: "{{ ansible_user_id }}"
+# User who will have NVM installed (defaults to the connection user)
+nvm_user: "{{ ansible_user }}"
+nvm_group: "{{ ansible_user }}"
 
 # Where to install NVM
-nvm_install_path: "~{{ nvm_user }}/.nvm"
+nvm_install_path: "/home/{{ nvm_user }}/.nvm" # Path constructed using nvm_user
 
 # Default global NPM packages to install
 nvm_npm_global_packages:
-  - name: npm
-    version: latest
+  # - name: npm # Removed: NVM manages npm version for each Node version
   - name: yarn
   - name: pnpm
   - name: eslint 

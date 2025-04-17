@@ -1,0 +1,15 @@
+# post test file
+---
+- name: post | install
+  become: true
+  become_user: "{{ nvm_user }}"
+  block:
+    - name: post | install | test  # noqa command-instead-of-module risky-shell-pipe
+      ansible.builtin.shell: >
+        export NVM_DIR=~/.nvm;
+        source "${NVM_DIR}/nvm.sh" && command -v nvm;
+      args:
+        executable: "{{ nvm_shell }}"
+      register: _result
+      changed_when: false
+      failed_when: _result.stdout != 'nvm'
